@@ -7,9 +7,7 @@ import { User } from "./schemas/user.schema";
 import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UserService {
-    // find(arg0: { role: { $ne: string; }; }) {
-    //     throw new Error("Method not implemented.");
-    // }
+    
     constructor(
         @InjectModel(User.name)
         private userModel: mongoose.Model<User>, private hashService: HashService
@@ -17,6 +15,7 @@ export class UserService {
 
     async findAll(): Promise<User[]> {
         const users = await this.userModel.find();
+        //const users = await this.userModel.find({ role: { $ne: 'super-admin' } })
         return users;
     }
 
@@ -26,11 +25,10 @@ export class UserService {
           })
           .exec();
       }
+      async findUserOne(username: string): Promise<User> {
+        return this.userModel.findOne({username: username}).exec();
+      }
 
-    // async create(user: User): Promise<User>{
-    //     const res = await this.userModel.create(user);
-    //     return res;
-    // }
     async registerUser(createUserDto: CreateUserDto) {
         // validate DTO
     
@@ -81,66 +79,75 @@ export class UserService {
             return await this.userModel.findByIdAndDelete(id);
     }
 
-   
-  // async changePassword({ 
-  //   userId,
-  //   newPassword,
-  //   currentPassword
-  //  }){
-  //   const user = await this.userModel.findById(userId)
-  //   if(!user) throw new NotFoundException();
-  //   if(newPassword === currentPassword) throw new HttpException("Current Password and New Password is same.", HttpStatus.BAD_REQUEST);
+    async findNonSuperAdminUsers(): Promise<User[]> {
+      try {
+        const nonSuperAdminUsers = await this.userModel.find({ role: { $nin: ['super-admin', 'super-admin'] } }).exec(); 
+        return nonSuperAdminUsers;
+      } catch (error) {
+        // Handle any errors here
+        throw error;
+      }
+    }
 
-  //   try{
-  //     await passwordValidationSche.validate(newPassword);
-  //   } catch(error){
-  //     throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-  //   }
+    
+    async saveResetToken(email: string, resetToken: string): Promise<void> {
+      try {
+        // Find the user by email and update the reset token field
+        await this.userModel.findOneAndUpdate(
+          { email },
+          { $set: { resetToken } },
+        ).exec();
+      } catch (error) {
+        // Handle any errors here
+        throw error;
+      }
+    }
 
-  //   const oldPassword = user.password;
-  //   const verify = await this.verifyPassword( currentPassword , oldPassword);
-  //   if(verify){
-  //     try{
-  //       const hash = await this.generateHash(newPassword);
-  //       const result = await this.userModel.updateOne({ _id: userId }, { $set: { password: hash } })
-  //       if(result.modifiedCount === 1){
-  //         return { code: 200, message: "Password Update Successfully"}
-  //       } else {
-  //         throw new InternalServerErrorException();
-  //       }
-  //     } catch(error){
-  //       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-  //     }
-  //   } else {
-  //     throw new UnauthorizedException()
-  //   }
-  // }
-  // async generateHash(password: string) {
-  //   return new Promise((resolve, rejects) => {
-  //     bcrypt.genSalt(Number(this.saltRounds), function (err, salt) {
-  //       if (err) rejects({ message: 'Generating Salt Error' });
-  //       bcrypt.hash(password, salt, function (err, hash) {
-  //         console.log(err);
-  //         if (!err) resolve(hash);
-  //         else rejects({ message: 'Hashing Error' });
-  //       });
-  //     });
-  //   });
-  // }
-  // saltRounds(saltRounds: any): number {
-  //   throw new Error("Method not implemented.");
-  // }
+    async validateResetToken(email: string, token: string): Promise<boolean> {
+      // Retrieve the user by email from your database
+      const user = await this.userModel.findOne({ email });
+  
+      if (!user) {
+        // User not found, token is invalid
+        return false;
+      }
+  
+      // Check if the user's reset token matches the provided token
+      if (user.resetToken !== token) {
+        // Token does not match, it's invalid
+        return false;
+      }
+  
+      // Check if the token has expired (you should store an expiration date with the token)
+      const tokenExpirationDate = user.resetTokenExpiration;
+      if (tokenExpirationDate && tokenExpirationDate < new Date()) {
+        // Token has expired, it's invalid
+        return false;
+      }
+  
+      // Token is valid
+      return true;
+    }
+  
+    // Inside your UserService
+async resetUserPassword(email: string, newPassword: string): Promise<void> {
+  // Retrieve the user by email from your database
+  const user = await this.userModel.findOne({ email });
 
-  // async verifyPassword(password: string, oldPassword: string) {
-  //   return new Promise((resolve, rejects) => {
-  //     bcrypt.compare(password, oldPassword, function (err, result) {
-  //       if (result) resolve(result);
-  //       else
-  //         rejects(
-  //           new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED),
-  //         );
-  //     });
-  //   });
-  // }
+  if (!user) {
+    // User not found, handle the error (e.g., throw an exception)
+    throw new NotFoundException('User not found');
+  }
+
+  // Update the user's password with the new password
+  user.password = newPassword;
+
+  // Optionally, reset the resetToken and resetTokenExpiration fields if needed
+  user.resetToken = null;
+  user.resetTokenExpiration = null;
+
+  // Save the updated user document
+  await user.save();
+}
 
 }

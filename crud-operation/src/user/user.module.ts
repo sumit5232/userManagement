@@ -9,6 +9,7 @@ import { HashService } from './hash.service';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtStrategy } from 'src/strategy/jwt.strategy';
 import { LocalStrategy } from 'src/strategy/local.strategy';
+import { MailerModule } from 'src/mailer/mailer.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { LocalStrategy } from 'src/strategy/local.strategy';
          expiresIn: '60d'
        },
      }),
+     MailerModule,
    ],
   controllers: [UserController],
   providers: [UserService, HashService, AuthService, JwtStrategy, LocalStrategy],

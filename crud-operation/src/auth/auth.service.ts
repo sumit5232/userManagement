@@ -1,15 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { config } from 'process';
+import { config, stdin } from 'process';
+import { MailerService } from 'src/mailer/mailer.service';
+import { ResetPasswordDto } from 'src/user/dto/reset-password.dto';
 import { HashService } from 'src/user/hash.service';
+import { User } from 'src/user/schemas/user.schema';
 import { UserService } from 'src/user/user.service';
-  
+import { v4 as uuidv4 } from 'uuid'; 
+
   
   @Injectable()
   export class AuthService {
     constructor(private userService: UserService,
       private hashService: HashService,
-      private jwtService: JwtService) {}
+      private jwtService: JwtService,
+      private mailerService: MailerService,
+      ) {}
   
     async validateUser(email: string, pass: string): Promise < any > {
       const user = await this.userService.getUserByUsername(email);
@@ -31,43 +37,48 @@ import { UserService } from 'src/user/user.service';
       };
     }
 
-//  async createForgottenPasswordToken(
-//   username:string
-//  ): Promise<ForgottenPassword> {
-//   var forgottenPassword = await this.userModel
-//  }
+    async getAllUsers(): Promise<User[]> {
+      return this.userService.findAll();
+    }
+    async getOneUser(username: string): Promise<User> {
+     return this.userService.findUserOne(username);
+    }
+ 
+    async getNonSuperAdminUsers(): Promise<User[]> {
+      return this.userService.findNonSuperAdminUsers();
+    }
 
-//     async sendEmailForgotPassword(username: string): Promise<boolean> {
-//       var userFromDb = await this.userModel.findOne({ username: email });
-//       if (!userFromDb)
-//       throw new HttpException("LOGIN_USER_NOT_FOUND", HttpStatus.NOT_FOUND);
+    private generateUniqueResetToken(): string {
+      const resetToken = uuidv4(); // Generate a UUID (Universally Unique Identifier)
+      return resetToken;
+    }
 
-//       var tokenModel = await this.createForgottenPasswordToken(email);
-
-//       if (tokenModel && tokenModel.newPasswordToken) {
-//         let transporter = nodemailer.createTransport({
-//           host: config.mail.host,
-//           auth: {
-//             user: config.mail.user,
-//             pass: config.mail.pass
-//           }
-//         });
-
-//         let mailOptions = {
-//           from: '"Company" <' + config.mail.user + ">",
-//           to: email, // list of receivers (seprated by ,)
-//           subject: "Forgotton Password",
-//           text: "Forgot Password",
-//           html:
-//           "Hi! <br><br> if you requested to reset your password <br><br>" + 
-//           "<b href=" +
-//           config.host.url +
-//           "i" +
-//           config.host.port +
-//           "/auth/email/reset-password/" +
-//           tokenModel.newPasswordToken +
-//           ">click here</a>" // html body
-//         };
-//       }
-//     }
+    async sendPasswordResetEmail(email: string) {
+      // Generate a unique reset token and associate it with the user's account
+      const resetToken = this.generateUniqueResetToken();
+  
+      // Save the reset token in the user's account or a dedicated reset tokens collection
+      await this.userService.saveResetToken(email, resetToken);
+  
+      // Send the reset token to the user via email
+      await this.mailerService.sendResetPasswordEmail(email, resetToken);
+    }
+  
+    async resetPassword(resetPasswordDto: ResetPasswordDto) {
+      // Validate the reset token and check if it's still valid (not expired)
+      const isValidToken = await this.userService.validateResetToken(
+        resetPasswordDto.email,
+        resetPasswordDto.token,
+      );
+  
+      if (!isValidToken) {
+        throw new UnauthorizedException('Invalid or expired reset token.');
+      }
+  
+      // Reset the user's password
+      await this.userService.resetUserPassword(
+        resetPasswordDto.email,
+        resetPasswordDto.newPassword,
+      );
+    }
   }

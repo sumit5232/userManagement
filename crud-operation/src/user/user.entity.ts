@@ -4,4 +4,6 @@ export class User {
      password: string;
      role: string;
      active: boolean;
+     resetToken: String;
+     resetTokenExpiration: Date
   }

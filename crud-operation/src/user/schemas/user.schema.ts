@@ -18,7 +18,12 @@ export class User {
 
     @Prop({ default: true })
     active: boolean;
+    
+    @Prop()
+    resetToken: String;
 
+    @Prop()
+    resetTokenExpiration: Date;
 
 }
 

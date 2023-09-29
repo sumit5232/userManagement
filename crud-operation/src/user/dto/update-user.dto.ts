@@ -5,4 +5,6 @@ export class UpdateUserDto {
     readonly password: string;
     readonly role: string;
     readonly active: boolean;
+    resetToken: String;
+    resetTokenExpiration: Date
 }
