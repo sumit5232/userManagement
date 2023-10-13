@@ -46,10 +46,11 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
-import { MailerModule } from './mailer/mailer.module';
-import { SomeModule } from './module/someModule';
-import { UserModule } from './user/user.module';
+import { ThemeConfigModule } from './theme-elements-config/theme-elements-config.module';
+import { ThemeJsonModule } from './theme-elements-json/theme-elements-json.module';
+// import { SomeModule } from './module/someModule';
+// import { UserModule } from './user/user.module';
+import { ThemeModule } from './theme/theme.module';
 
 @Module({
   imports: [
@@ -62,8 +63,13 @@ import { UserModule } from './user/user.module';
       retryWrites: true,
       w: 'majority',
     }),
-    AuthModule,
-    UserModule,
+    // AuthModule,
+    // UserModule,
+    // ThemeElementsConfigModule,
+    // ThemeElementsListModule,
+    ThemeModule,
+    ThemeConfigModule,
+    ThemeJsonModule,
     // MailerModule,
     // SomeModule,
   ],
