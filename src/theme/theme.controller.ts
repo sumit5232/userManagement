@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ThemeService } from './theme.service';
 
-@Controller('theme-list')
+@Controller('theme')
 export class ThemeController {
     constructor(private themeService: ThemeService){
 

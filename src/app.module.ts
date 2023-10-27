@@ -46,11 +46,17 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ThemeConfigModule } from './theme-elements-config/theme-elements-config.module';
-import { ThemeJsonModule } from './theme-elements-json/theme-elements-json.module';
+import { CongratsModule } from './congrats/congrats.module';
+import { DomainModule } from './domain/domain.module';
+import { LanderModule } from './lander/lander.module';
+import { ProductionModule } from './production/production.module';
+import { QuizModule } from './quiz/quiz.module';
 // import { SomeModule } from './module/someModule';
 // import { UserModule } from './user/user.module';
 import { ThemeModule } from './theme/theme.module';
+import { UserModule } from './user-management/user.module';
+
+import { FileModule } from './image/file.module';
 
 @Module({
   imports: [
@@ -58,18 +64,30 @@ import { ThemeModule } from './theme/theme.module';
       envFilePath: '.env',
       isGlobal: true,
     }),
-    MongooseModule.forRoot('mongodb://localhost:27017', {
-      dbName: 'wecall-cms', 
-      retryWrites: true,
-      w: 'majority',
-    }),
+    // MongooseModule.forRoot(process.env.DB_URI, {
+    //   dbName: 'wecall-cms', 
+    //   retryWrites: true,
+    //   w: 'majority',
+    // }),
+
+    MongooseModule.forRoot("mongodb://127.0.0.1:27017/wecall-cms"),
     // AuthModule,
     // UserModule,
     // ThemeElementsConfigModule,
     // ThemeElementsListModule,
     ThemeModule,
-    ThemeConfigModule,
-    ThemeJsonModule,
+    QuizModule,
+    LanderModule,
+    CongratsModule,
+    DomainModule,
+    ProductionModule,
+    UserModule,
+    ConfigModule,
+    FileModule,
+
+   
+    // ThemeConfigModule,
+    // ThemeJsonModule,
     // MailerModule,
     // SomeModule,
   ],
